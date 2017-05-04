@@ -143,4 +143,7 @@ public class BleService extends Service {
         }
     }
 
+    interface BleScanCallback {
+        List onScanResult();
+    }
 }
