@@ -69,7 +69,7 @@ public class BleService extends Service {
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
             mLeScanCallback = new MyLeScanCallback();
         }
-        mBluetoothGattCallback = new MyBluetoothGattCallback();
+        //mBluetoothGattCallback = new MyBluetoothGattCallback();
 
     }
 
@@ -149,15 +149,19 @@ public class BleService extends Service {
     }
 
     public void connectBleDevice(BluetoothDevice device, Context context) {
+        mBluetoothGattCallback = new MyBluetoothGattCallback(context);
         device.connectGatt(context, false, mBluetoothGattCallback);
     }
 
     public class MyBluetoothGattCallback extends BluetoothGattCallback {
+        private Context context;
+        public MyBluetoothGattCallback(Context context) {
+            this.context = context;
+        }
+
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
-            //status = BluetoothGatt.STATE_CONNECTED;
-
         }
 
         @Override
