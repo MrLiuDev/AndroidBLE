@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
+        mService.connectBleDevice(mBleAdapter.getItem(position), this);
     }
 
     private class BleReceiver extends BroadcastReceiver {

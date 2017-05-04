@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -18,6 +21,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -34,7 +38,8 @@ public class BleService extends Service {
     private boolean mScanning;
     private MyScanCallback mScanCallback;
     private MyLeScanCallback mLeScanCallback;
-    public OnBleScanCallback onBleScanCallback;
+    private OnBleScanCallback onBleScanCallback;
+    private BluetoothGattCallback mBluetoothGattCallback;
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
@@ -64,6 +69,7 @@ public class BleService extends Service {
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
             mLeScanCallback = new MyLeScanCallback();
         }
+        mBluetoothGattCallback = new MyBluetoothGattCallback();
 
     }
 
@@ -139,6 +145,39 @@ public class BleService extends Service {
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
             onBleScanCallback.onLeScan(device, rssi);
+        }
+    }
+
+    public void connectBleDevice(BluetoothDevice device, Context context) {
+        device.connectGatt(context, false, mBluetoothGattCallback);
+    }
+
+    public class MyBluetoothGattCallback extends BluetoothGattCallback {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            super.onConnectionStateChange(gatt, status, newState);
+            //status = BluetoothGatt.STATE_CONNECTED;
+
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            super.onServicesDiscovered(gatt, status);
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            super.onCharacteristicChanged(gatt, characteristic);
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicWrite(gatt, characteristic, status);
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicRead(gatt, characteristic, status);
         }
     }
 
