@@ -26,7 +26,7 @@ import java.util.List;
  * Created by LiuKang on 2017/5/4.
  */
 
-public class BleService extends Service {
+public abstract class BleService extends Service {
     private BleBinder mBinder = new BleBinder();
     private Handler mHandler;
     private static final int SCAN_PERIOD = 15000;
@@ -128,6 +128,7 @@ public class BleService extends Service {
             if (!bluetoothDevices.contains(result.getDevice())) {
                 bluetoothDevices.add(result.getDevice());
                 Log.e(TAG, bluetoothDevices.toString());
+                BleService.this.onScanResult(bluetoothDevices);
             }
         }
     }
@@ -146,4 +147,6 @@ public class BleService extends Service {
     interface BleScanCallback {
         List onScanResult();
     }
+
+    abstract List onScanResult(List list);
 }
