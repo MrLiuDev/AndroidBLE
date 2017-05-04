@@ -1,48 +1,34 @@
 package me.mrliu.androidble;
 
-import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.le.BluetoothLeScanner;
-import android.bluetooth.le.ScanCallback;
-import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
-import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
-    private BluetoothLeScanner bleScanner;
-    private List<ScanFilter> scanFilters;
-    private List<BluetoothDevice> bluetoothDevices = new ArrayList<>();
-
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, BleService.OnBleScanCallback, AdapterView.OnItemClickListener {
     private Button btnOpenOrClose;
-    private TextView tvDevice;
     private ListView listView;
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private BleService.BleBinder mService;
+    private BleService mService;
     private ServiceConnection mServiceConnection;
     private Intent serviceIntent;
     private BleReceiver mBleReceiver;
+    private BleAdapter mBleAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,13 +36,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         setViews();
-        //getBluetoothAdapter();
+        setListView();
 
         mServiceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
-                mService = (BleService.BleBinder) service;
+                mService = ((BleService.BleBinder)service).getService();
                 if (mService != null) {
+                    mService.setOnBleScanCallback(MainActivity.this);
                     Type mType = mService.initBluetooth();
                     switch (mType) {
                         case NONE:
@@ -90,6 +77,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         registerReceiver(mBleReceiver, mFilter);
     }
 
+    private void setListView() {
+        mBleAdapter = new BleAdapter(this);
+        listView.setAdapter(mBleAdapter);
+        listView.setOnItemClickListener(this);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -98,12 +91,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setViews() {
-        tvDevice = (TextView) findViewById(R.id.tv_device);
+        listView = (ListView) findViewById(R.id.list_view);
         btnOpenOrClose = (Button) findViewById(R.id.btn_open_bt);
         btnOpenOrClose.setOnClickListener(this);
         findViewById(R.id.btn_start_scan).setOnClickListener(this);
     }
-
 
     @Override
     public void onClick(View v) {
@@ -113,16 +105,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.btn_start_scan:
+                mBleAdapter.clear();
                 mService.scanBleDevices(this);
-                /*if (mBluetoothAdapter != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        bleScanner = mBluetoothAdapter.getBluetoothLeScanner();
-                        scanFilters = new ArrayList<>();
-                        //scanFilters.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString("0000fee0-0000-1000-8000-00805f9b34fb")).build());
-                        ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
-                        bleScanner.startScan(scanFilters, scanSettings, new MyScanCallback());
-                    }
-                }*/
                 break;
         }
     }
@@ -130,13 +114,42 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == BleService.BleBinder.REQUEST_ENABLE_BT) {
+        if (requestCode == BleService.REQUEST_ENABLE_BT) {
             if (resultCode == RESULT_OK) {
                 //Toast.makeText(this, "蓝牙打开成功", Toast.LENGTH_SHORT).show();
             } else if (resultCode == RESULT_CANCELED){
                 Toast.makeText(this, "蓝牙未打开", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public void onScanResult(final ScanResult result) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mBleAdapter.contains(result.getDevice())) {
+                    mBleAdapter.addDevice(result.getDevice());
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onLeScan(final BluetoothDevice device, int rssi) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!mBleAdapter.contains(device)) {
+                    mBleAdapter.addDevice(device);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
     }
 
     private class BleReceiver extends BroadcastReceiver {
@@ -159,24 +172,4 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-
-
-    @SuppressLint("NewApi")
-    private class MyScanCallback extends ScanCallback{
-        public MyScanCallback() {
-            tvDevice.setText("");
-        }
-
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            if (result != null) {
-                if (!bluetoothDevices.contains(result.getDevice())) {
-                    bluetoothDevices.add(result.getDevice());
-                    for (BluetoothDevice device : bluetoothDevices) {
-                        Log.e(TAG, device.getName()+", "+device.getAddress());
-                    }
-                }
-            }
-        }
-    }
 }

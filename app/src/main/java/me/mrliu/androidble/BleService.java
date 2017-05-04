@@ -7,7 +7,9 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
@@ -16,7 +18,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -26,20 +27,27 @@ import java.util.List;
  * Created by LiuKang on 2017/5/4.
  */
 
-public abstract class BleService extends Service {
+public class BleService extends Service {
     private BleBinder mBinder = new BleBinder();
     private Handler mHandler;
     private static final int SCAN_PERIOD = 15000;
     private boolean mScanning;
     private MyScanCallback mScanCallback;
     private MyLeScanCallback mLeScanCallback;
-    private List<BluetoothDevice> bluetoothDevices = new ArrayList<>();
+    public OnBleScanCallback onBleScanCallback;
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
+    private List<ScanFilter> scanFilters;
 
     private static final String TAG = BleService.class.getSimpleName();
+    public static final int REQUEST_ENABLE_BT = 001;
+
+
+    public void setOnBleScanCallback(OnBleScanCallback onBleScanCallback) {
+        this.onBleScanCallback = onBleScanCallback;
+    }
 
     @Nullable
     @Override
@@ -59,64 +67,61 @@ public abstract class BleService extends Service {
 
     }
 
-    public class BleBinder extends Binder {
-        public static final int REQUEST_ENABLE_BT = 001;
-
-        public Type initBluetooth() {
-            mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                mBluetoothAdapter = mBluetoothManager.getAdapter();
-            }
-            if (mBluetoothAdapter == null) {
-                return Type.NONE;
-            } else if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {
-                return Type.OFF;
-            } else if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
-                return Type.ON;
-            }
+    public Type initBluetooth() {
+        mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            mBluetoothAdapter = mBluetoothManager.getAdapter();
+        }
+        if (mBluetoothAdapter == null) {
             return Type.NONE;
+        } else if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_OFF) {
+            return Type.OFF;
+        } else if (mBluetoothAdapter.getState() == BluetoothAdapter.STATE_ON) {
+            return Type.ON;
         }
+        return Type.NONE;
+    }
 
-        public void openOrCloseBluetooth(Activity mActivity) {
-            if (mBluetoothAdapter != null) {
-                if (!mBluetoothAdapter.isEnabled()) {
-                    Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                    mActivity.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-                } else {
-                    mBluetoothAdapter.disable();
-                }
+    public void openOrCloseBluetooth(Activity mActivity) {
+        if (mBluetoothAdapter != null) {
+            if (!mBluetoothAdapter.isEnabled()) {
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                mActivity.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
+            } else {
+                mBluetoothAdapter.disable();
             }
         }
+    }
 
-        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-        public void scanBleDevices(Context context) {
-            if (mBluetoothAdapter != null) {
-                if (!mBluetoothAdapter.isEnabled()) {
-                    Toast.makeText(context, "蓝牙未打开", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void scanBleDevices(final Context context) {
+        if (mBluetoothAdapter != null) {
+            if (!mBluetoothAdapter.isEnabled()) {
+                Toast.makeText(context, "蓝牙未打开", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                if (bluetoothDevices.size()>0) {
-                    bluetoothDevices.clear();
-                }
-                if (mScanCallback != null) {
-                    mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-                    mBluetoothLeScanner.startScan(mScanCallback);
-                } else if (mLeScanCallback != null){
-                    mBluetoothAdapter.startLeScan(mLeScanCallback);
-                }
-                mHandler.postDelayed(new Runnable() {
-                    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-                    @Override
-                    public void run() {
-                        if (mBluetoothLeScanner != null) {
-                            mBluetoothLeScanner.stopScan(mScanCallback);
-                        } else {
-                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                        }
+            if (mScanCallback != null) {
+                mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+                scanFilters = new ArrayList<>();
+                //scanFilters.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString("0000fee0-0000-1000-8000-00805f9b34fb")).build());
+                ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
+                mBluetoothLeScanner.startScan(scanFilters, scanSettings, mScanCallback);
+            } else if (mLeScanCallback != null){
+                mBluetoothAdapter.startLeScan(mLeScanCallback);
+            }
+            mHandler.postDelayed(new Runnable() {
+                @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+                @Override
+                public void run() {
+                    if (mBluetoothLeScanner != null) {
+                        mBluetoothLeScanner.stopScan(mScanCallback);
+                    } else {
+                        mBluetoothAdapter.stopLeScan(mLeScanCallback);
                     }
-                }, SCAN_PERIOD);
-            }
+                    Toast.makeText(context, "扫描结束", Toast.LENGTH_SHORT).show();
+                }
+            }, SCAN_PERIOD);
         }
     }
 
@@ -125,11 +130,7 @@ public abstract class BleService extends Service {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-            if (!bluetoothDevices.contains(result.getDevice())) {
-                bluetoothDevices.add(result.getDevice());
-                Log.e(TAG, bluetoothDevices.toString());
-                BleService.this.onScanResult(bluetoothDevices);
-            }
+            onBleScanCallback.onScanResult(result);
         }
     }
 
@@ -137,16 +138,19 @@ public abstract class BleService extends Service {
     public class MyLeScanCallback implements BluetoothAdapter.LeScanCallback {
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-            if (!bluetoothDevices.contains(device)) {
-                bluetoothDevices.add(device);
-                Log.e(TAG, bluetoothDevices.toString());
-            }
+            onBleScanCallback.onLeScan(device, rssi);
         }
     }
 
-    interface BleScanCallback {
-        List onScanResult();
+    public interface OnBleScanCallback {
+        void onScanResult(ScanResult result);
+        void onLeScan(BluetoothDevice device, int rssi);
     }
 
-    abstract List onScanResult(List list);
+    public class BleBinder extends Binder {
+
+        public BleService getService() {
+            return BleService.this;
+        }
+    }
 }
