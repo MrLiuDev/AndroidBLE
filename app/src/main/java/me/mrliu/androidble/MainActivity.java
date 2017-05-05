@@ -2,6 +2,8 @@ package me.mrliu.androidble;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.ScanResult;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -10,15 +12,19 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, BleService.OnBleScanCallback, AdapterView.OnItemClickListener {
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, BleService.OnBleScanCallbackListener, AdapterView.OnItemClickListener, BleService.OnConnectionStateChangeListener, BleService.OnServicesDiscoveredListener {
     private Button btnOpenOrClose;
     private ListView listView;
 
@@ -43,7 +49,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onServiceConnected(ComponentName name, IBinder service) {
                 mService = ((BleService.BleBinder)service).getService();
                 if (mService != null) {
-                    mService.setOnBleScanCallback(MainActivity.this);
+                    mService.setOnBleScanCallbackListener(MainActivity.this);
+                    mService.setOnConnectionStateChangeListener(MainActivity.this);
+                    mService.setOnServicesDiscoveredListener(MainActivity.this);
                     Type mType = mService.initBluetooth();
                     switch (mType) {
                         case NONE:
@@ -95,6 +103,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnOpenOrClose = (Button) findViewById(R.id.btn_open_bt);
         btnOpenOrClose.setOnClickListener(this);
         findViewById(R.id.btn_start_scan).setOnClickListener(this);
+        findViewById(R.id.btn_connection_state).setOnClickListener(this);
+        findViewById(R.id.btn_disconnect).setOnClickListener(this);
     }
 
     @Override
@@ -105,8 +115,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.btn_start_scan:
-                mBleAdapter.clear();
-                mService.scanBleDevices(this);
+                if (mService.isScanning()) {
+                    mService.stopScanBleDevices();
+                } else {
+                    mBleAdapter.clear();
+                    mService.scanBleDevices(this);
+                }
+
+                break;
+
+            case R.id.btn_connection_state:
+                switch (mService.getConnectionState()) {
+                    case BluetoothProfile.STATE_CONNECTED:
+                        Toast.makeText(this, "已连接", Toast.LENGTH_SHORT).show();
+                        break;
+                    case BluetoothProfile.STATE_CONNECTING:
+                        Toast.makeText(this, "连接中", Toast.LENGTH_SHORT).show();
+                        break;
+                    case BluetoothProfile.STATE_DISCONNECTED:
+                        Toast.makeText(this, "已断开", Toast.LENGTH_SHORT).show();
+                        break;
+                    case BluetoothProfile.STATE_DISCONNECTING:
+                        Toast.makeText(this, "断开中", Toast.LENGTH_SHORT).show();
+                        break;
+                }
+                break;
+
+            case R.id.btn_disconnect:
+                mService.disconnect();
                 break;
         }
     }
@@ -125,6 +161,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onScanResult(final ScanResult result) {
+        Log.e(TAG, "onScanResult");
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -137,6 +174,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onLeScan(final BluetoothDevice device, int rssi) {
+        Log.e(TAG, "onLeScan");
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -149,7 +187,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        mService.connectBleDevice(mBleAdapter.getItem(position), this);
+        connectBleDevice(mBleAdapter.getItem(position));
+        MyApplication.device = mBleAdapter.getItem(position);
+    }
+
+    private void connectBleDevice(final BluetoothDevice device) {
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mService.connectBleDevice(device, MainActivity.this);
+            }
+        }, 500);
+        if (mService.isScanning()) {
+            mService.stopScanBleDevices();
+        }
+        if (mService.getConnectionState() == BluetoothProfile.STATE_CONNECTED) {
+            mService.disconnect();
+        }
+
+    }
+
+    @Override
+    public void onConnectionStateChange(final int mConnectionState) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(MainActivity.this, mConnectionState+"", Toast.LENGTH_SHORT).show();
+                if (mConnectionState == BluetoothProfile.STATE_CONNECTED) {
+                    mService.discoverServices();
+                }
+            }
+        });
+    }
+
+    @Override
+    public void onServicesDiscovered(final List<BluetoothGattService> bluetoothGattServices) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                MyApplication.bluetoothGattServices = bluetoothGattServices;
+                Intent intent = new Intent(MainActivity.this, ServicesActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     private class BleReceiver extends BroadcastReceiver {

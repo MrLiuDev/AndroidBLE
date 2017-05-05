@@ -7,7 +7,9 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -36,22 +38,34 @@ public class BleService extends Service {
     private Handler mHandler;
     private static final int SCAN_PERIOD = 15000;
     private boolean mScanning;
+    private int mConnectionState = BluetoothProfile.STATE_DISCONNECTED;
     private MyScanCallback mScanCallback;
     private MyLeScanCallback mLeScanCallback;
-    private OnBleScanCallback onBleScanCallback;
+    private OnBleScanCallbackListener onBleScanCallbackListener;
+    private OnConnectionStateChangeListener onConnectionStateChangeListener;
+    private OnServicesDiscoveredListener onServicesDiscoveredListener;
     private BluetoothGattCallback mBluetoothGattCallback;
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private List<ScanFilter> scanFilters;
+    private BluetoothGatt mBluetoothGatt;
 
     private static final String TAG = BleService.class.getSimpleName();
     public static final int REQUEST_ENABLE_BT = 001;
 
 
-    public void setOnBleScanCallback(OnBleScanCallback onBleScanCallback) {
-        this.onBleScanCallback = onBleScanCallback;
+    public void setOnBleScanCallbackListener(OnBleScanCallbackListener onBleScanCallbackListener) {
+        this.onBleScanCallbackListener = onBleScanCallbackListener;
+    }
+
+    public void setOnConnectionStateChangeListener(OnConnectionStateChangeListener onConnectionStateChangeListener) {
+        this.onConnectionStateChangeListener = onConnectionStateChangeListener;
+    }
+
+    public void setOnServicesDiscoveredListener(OnServicesDiscoveredListener onServicesDiscoveredListener) {
+        this.onServicesDiscoveredListener = onServicesDiscoveredListener;
     }
 
     @Nullable
@@ -69,7 +83,7 @@ public class BleService extends Service {
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 && Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
             mLeScanCallback = new MyLeScanCallback();
         }
-        //mBluetoothGattCallback = new MyBluetoothGattCallback();
+        mBluetoothGattCallback = new MyBluetoothGattCallback();
 
     }
 
@@ -99,6 +113,20 @@ public class BleService extends Service {
         }
     }
 
+    public boolean isScanning() {
+        return mScanning;
+    }
+
+    public void stopScanBleDevices() {
+        mScanning = false;
+        if (mBluetoothLeScanner != null) {
+            mBluetoothLeScanner.stopScan(mScanCallback);
+        } else {
+            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+        }
+        Log.e(TAG, "停止扫描");
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void scanBleDevices(final Context context) {
         if (mBluetoothAdapter != null) {
@@ -108,24 +136,27 @@ public class BleService extends Service {
             }
 
             if (mScanCallback != null) {
+                mScanning = true;
                 mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
                 scanFilters = new ArrayList<>();
                 //scanFilters.add(new ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString("0000fee0-0000-1000-8000-00805f9b34fb")).build());
                 ScanSettings scanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
                 mBluetoothLeScanner.startScan(scanFilters, scanSettings, mScanCallback);
             } else if (mLeScanCallback != null){
+                mScanning = true;
                 mBluetoothAdapter.startLeScan(mLeScanCallback);
             }
             mHandler.postDelayed(new Runnable() {
                 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
                 @Override
                 public void run() {
+                    mScanning = false;
                     if (mBluetoothLeScanner != null) {
                         mBluetoothLeScanner.stopScan(mScanCallback);
                     } else {
                         mBluetoothAdapter.stopLeScan(mLeScanCallback);
                     }
-                    Toast.makeText(context, "扫描结束", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(context, "扫描结束", Toast.LENGTH_SHORT).show();
                 }
             }, SCAN_PERIOD);
         }
@@ -136,7 +167,7 @@ public class BleService extends Service {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-            onBleScanCallback.onScanResult(result);
+            onBleScanCallbackListener.onScanResult(result);
         }
     }
 
@@ -144,29 +175,57 @@ public class BleService extends Service {
     public class MyLeScanCallback implements BluetoothAdapter.LeScanCallback {
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-            onBleScanCallback.onLeScan(device, rssi);
+            onBleScanCallbackListener.onLeScan(device, rssi);
         }
+    }
+
+    public int getConnectionState() {
+        return mConnectionState;
+    }
+
+    public void disconnect() {
+        if (mBluetoothAdapter != null && mBluetoothGatt != null) {
+            if (mConnectionState == BluetoothProfile.STATE_CONNECTED) {
+                mBluetoothGatt.disconnect();
+                mBluetoothGatt.close();
+            }
+        }
+    }
+
+    public boolean discoverServices() {
+        return mBluetoothGatt.discoverServices();
     }
 
     public void connectBleDevice(BluetoothDevice device, Context context) {
-        mBluetoothGattCallback = new MyBluetoothGattCallback(context);
-        device.connectGatt(context, false, mBluetoothGattCallback);
+        mConnectionState = BluetoothProfile.STATE_CONNECTING;
+        mBluetoothGatt = device.connectGatt(context, false, mBluetoothGattCallback);
     }
 
     public class MyBluetoothGattCallback extends BluetoothGattCallback {
-        private Context context;
-        public MyBluetoothGattCallback(Context context) {
-            this.context = context;
-        }
 
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
+            Log.e(TAG, "status:"+status+", newState:"+newState+","+Thread.currentThread().getName());
+            mConnectionState = newState;
+            onConnectionStateChangeListener.onConnectionStateChange(mConnectionState);
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                Log.e(TAG, "已连接");
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                Log.e(TAG, "已断开");
+            } else if (newState == BluetoothProfile.STATE_CONNECTING) {
+                Log.e(TAG, "连接中");
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTING) {
+                Log.e(TAG, "断开中");
+            }
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             super.onServicesDiscovered(gatt, status);
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                onServicesDiscoveredListener.onServicesDiscovered(mBluetoothGatt.getServices());
+            }
         }
 
         @Override
@@ -185,9 +244,17 @@ public class BleService extends Service {
         }
     }
 
-    public interface OnBleScanCallback {
+    public interface OnBleScanCallbackListener {
         void onScanResult(ScanResult result);
         void onLeScan(BluetoothDevice device, int rssi);
+    }
+
+    public interface OnConnectionStateChangeListener {
+        void onConnectionStateChange(int mConnectionState);
+    }
+
+    public interface OnServicesDiscoveredListener {
+        void onServicesDiscovered(List<BluetoothGattService> bluetoothGattServices);
     }
 
     public class BleBinder extends Binder {
