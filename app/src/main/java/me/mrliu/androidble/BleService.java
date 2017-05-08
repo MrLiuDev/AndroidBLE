@@ -262,7 +262,7 @@ public class BleService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
-            Log.e(TAG, "onCharacteristicChanged:"+ Utils.ByteArraytoHex(characteristic.getValue()));
+            Log.e(TAG, "onCharacteristicChanged:"+ Utils.ByteArrayToHex(characteristic.getValue()));
             onCharacteristicChangedListener.onCharacteristicChanged(characteristic);
         }
 

@@ -1,8 +1,8 @@
 package me.mrliu.androidble.activity;
 
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -88,12 +88,11 @@ public class BleModuleActivity extends AppCompatActivity implements View.OnClick
 
     @Override
     public void onCharacteristicChanged(final BluetoothGattCharacteristic characteristic) {
-        Log.e(TAG, "onCharacteristicChanged:"+Utils.ByteArraytoHex(characteristic.getValue()));
+        Log.e(TAG, "onCharacteristicChanged:"+Utils.ByteArrayToHex(characteristic.getValue()));
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                adapter.addItem(characteristic);
-                adapter.notifyDataSetChanged();
+                adapter.addItem(Utils.ByteArrayToHex(characteristic.getValue()));
                 listView.setSelection(adapter.getCount()-1);
             }
         });

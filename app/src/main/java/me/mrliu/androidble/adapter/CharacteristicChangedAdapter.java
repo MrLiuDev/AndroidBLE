@@ -1,6 +1,5 @@
 package me.mrliu.androidble.adapter;
 
-import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,39 +11,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.mrliu.androidble.R;
-import me.mrliu.androidble.utils.Utils;
 
 /**
  * Created by LiuKang on 2017/5/8.
  */
 
 public class CharacteristicChangedAdapter extends BaseAdapter {
-    private List<BluetoothGattCharacteristic> characteristics;
+    private List<String> characteristicValues;
     private LayoutInflater inflater;
 
     public CharacteristicChangedAdapter(Context context) {
-        characteristics = new ArrayList<>();
+        characteristicValues = new ArrayList<>();
         inflater = LayoutInflater.from(context);
     }
 
-    public void addItem(BluetoothGattCharacteristic characteristic) {
-        characteristics.add(characteristic);
+    public void addItem(String characteristicValue) {
+        characteristicValues.add(characteristicValue);
+        notifyDataSetChanged();
     }
 
     public void clearItems() {
-        if (characteristics.size()>0) {
-            characteristics.clear();
+        if (characteristicValues.size()>0) {
+            characteristicValues.clear();
         }
+        notifyDataSetChanged();
     }
 
     @Override
     public int getCount() {
-        return characteristics.size();
+        return characteristicValues.size();
     }
 
     @Override
-    public BluetoothGattCharacteristic getItem(int position) {
-        return characteristics.get(position);
+    public String getItem(int position) {
+        return characteristicValues.get(position);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class CharacteristicChangedAdapter extends BaseAdapter {
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
-        holder.tv.setText(Utils.ByteArraytoHex(getItem(position).getValue()));
+        holder.tv.setText(getItem(position));
         return convertView;
     }
 

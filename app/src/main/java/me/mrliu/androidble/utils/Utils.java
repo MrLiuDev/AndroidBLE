@@ -86,17 +86,32 @@ public class Utils {
         return data;
     }
 
-    public static String ByteArraytoHex(byte[] bytes) {
+    public static String ByteArrayToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
             String bs = String.format("%02X ", b);
-            if (bs.trim().equals("0A")){
+            /*if (bs.trim().equals("0A")){
                 sb.append("0D 0A");
             }else
-                sb.append(bs);
+                sb.append(bs);*/
+            sb.append(bs);
         }
-
-
         return sb.toString();
+    }
+
+    public static String bytesToHexString(byte[] src){
+        StringBuilder stringBuilder = new StringBuilder("");
+        if (src == null || src.length <= 0) {
+            return null;
+        }
+        for (int i = 0; i < src.length; i++) {
+            int v = src[i] & 0xFF;
+            String hv = Integer.toHexString(v);
+            if (hv.length() < 2) {
+                stringBuilder.append(0);
+            }
+            stringBuilder.append(hv);
+        }
+        return stringBuilder.toString();
     }
 }
