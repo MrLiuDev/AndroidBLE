@@ -44,6 +44,7 @@ public class CharacteristicsActivity extends AppCompatActivity implements Adapte
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         MyApplication.bluetoothGattCharacteristic = adapter.getItem(position);
+        //MyApplication.bluetoothGattCharacteristic.getProperties();
         startActivity(new Intent(this, GattDetailActivity.class));
     }
 }

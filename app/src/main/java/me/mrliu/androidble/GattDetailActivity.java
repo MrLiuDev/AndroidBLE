@@ -1,19 +1,27 @@
 package me.mrliu.androidble;
 
+import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
 public class GattDetailActivity extends AppCompatActivity {
+    private static final String TAG = GattDetailActivity.class.getSimpleName();
     private LinearLayout llWrite, llOther;
     private ImageButton ibOption;
+
+    private BluetoothGattCharacteristic characteristic;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gatt_detail);
+
+        characteristic = MyApplication.bluetoothGattCharacteristic;
+        Log.e(TAG, Utils.getProperties(this, characteristic));
 
         setViews();
 
