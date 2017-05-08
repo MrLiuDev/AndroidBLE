@@ -87,6 +87,15 @@ public class BleService extends Service {
     }
 
     @Override
+    public boolean onUnbind(Intent intent) {
+        if (isScanning()) {
+            stopScanBleDevices();
+        }
+        disconnect();
+        return super.onUnbind(intent);
+    }
+
+    @Override
     public void onCreate() {
         super.onCreate();
         mHandler = new Handler();
