@@ -26,7 +26,6 @@ public class GattDetailActivity extends AppCompatActivity {
 
         characteristic = MyApplication.bluetoothGattCharacteristic;
         Log.e(TAG, Utils.getProperties(this, characteristic));
-
         setViews();
 
     }

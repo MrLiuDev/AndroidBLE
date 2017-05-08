@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 mService = ((BleService.BleBinder)service).getService();
+                MyApplication.mService = mService;
                 if (mService != null) {
                     mService.setOnBleScanCallbackListener(MainActivity.this);
                     mService.setOnConnectionStateChangeListener(MainActivity.this);

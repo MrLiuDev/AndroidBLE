@@ -2,10 +2,13 @@ package me.mrliu.androidble.utils;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
+import android.util.Log;
 
 import me.mrliu.androidble.R;
 
 public class Utils {
+    private static final String TAG = Utils.class.getSimpleName();
+
     public static String getProperties(Context context, BluetoothGattCharacteristic item){
         String proprties;
         String read = null, write = null, notify = null;
@@ -57,10 +60,43 @@ public class Utils {
 
     // Return the properties of mGattCharacteristics
     public static boolean getGattCharacteristicsProperties(int characteristics,int characteristicsSearch) {
-
+        Log.e(TAG, (characteristics & characteristicsSearch)+";"+characteristicsSearch);
         if ((characteristics & characteristicsSearch) == characteristicsSearch) {
             return true;
         }
         return false;
+    }
+
+
+
+    public static byte[] hexStringToByteArray(String s) {
+        if (s.length() % 2 != 0) {
+            StringBuilder stringBuilder = new StringBuilder(s);
+            stringBuilder.insert(s.length()-1,"0");
+            s = stringBuilder.toString();
+        }
+
+
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i + 1), 16));
+        }
+        return data;
+    }
+
+    public static String ByteArraytoHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            String bs = String.format("%02X ", b);
+            if (bs.trim().equals("0A")){
+                sb.append("0D 0A");
+            }else
+                sb.append(bs);
+        }
+
+
+        return sb.toString();
     }
 }

@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -28,8 +29,11 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+import me.mrliu.androidble.utils.GattAttributes;
 import me.mrliu.androidble.utils.Type;
+import me.mrliu.androidble.utils.Utils;
 
 /**
  * Created by LiuKang on 2017/5/4.
@@ -46,6 +50,7 @@ public class BleService extends Service {
     private OnBleScanCallbackListener onBleScanCallbackListener;
     private OnConnectionStateChangeListener onConnectionStateChangeListener;
     private OnServicesDiscoveredListener onServicesDiscoveredListener;
+    private OnCharacteristicChangedListener onCharacteristicChangedListener;
     private BluetoothGattCallback mBluetoothGattCallback;
 
     private BluetoothManager mBluetoothManager;
@@ -69,6 +74,11 @@ public class BleService extends Service {
     public void setOnServicesDiscoveredListener(OnServicesDiscoveredListener onServicesDiscoveredListener) {
         this.onServicesDiscoveredListener = onServicesDiscoveredListener;
     }
+
+    public void setOnCharacteristicChangedListener(OnCharacteristicChangedListener onCharacteristicChangedListener) {
+        this.onCharacteristicChangedListener = onCharacteristicChangedListener;
+    }
+
 
     @Nullable
     @Override
@@ -194,14 +204,33 @@ public class BleService extends Service {
         }
     }
 
-    public boolean discoverServices() {
-        return mBluetoothGatt.discoverServices();
-    }
-
     public void connectBleDevice(BluetoothDevice device, Context context) {
         mConnectionState = BluetoothProfile.STATE_CONNECTING;
         mBluetoothGatt = device.connectGatt(context, false, mBluetoothGattCallback);
     }
+
+    public boolean discoverServices() {
+        return mBluetoothGatt.discoverServices();
+    }
+
+    public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic, boolean enable) {
+        if (enable) {
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(GattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
+            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            mBluetoothGatt.writeDescriptor(descriptor);
+        } else {
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(GattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
+            descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+            mBluetoothGatt.writeDescriptor(descriptor);
+        }
+        mBluetoothGatt.setCharacteristicNotification(characteristic, enable);
+    }
+
+    public void writeCharacteristic(BluetoothGattCharacteristic characteristic, byte[] byteArray) {
+        characteristic.setValue(byteArray);
+        mBluetoothGatt.writeCharacteristic(characteristic);
+    }
+
 
     public class MyBluetoothGattCallback extends BluetoothGattCallback {
 
@@ -233,11 +262,14 @@ public class BleService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
+            Log.e(TAG, "onCharacteristicChanged:"+ Utils.ByteArraytoHex(characteristic.getValue()));
+            onCharacteristicChangedListener.onCharacteristicChanged(characteristic);
         }
 
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
+            Log.e(TAG, "onCharacteristicWrite");
         }
 
         @Override
@@ -257,6 +289,10 @@ public class BleService extends Service {
 
     public interface OnServicesDiscoveredListener {
         void onServicesDiscovered(List<BluetoothGattService> bluetoothGattServices);
+    }
+
+    public interface OnCharacteristicChangedListener {
+        void onCharacteristicChanged(BluetoothGattCharacteristic characteristic);
     }
 
     public class BleBinder extends Binder {

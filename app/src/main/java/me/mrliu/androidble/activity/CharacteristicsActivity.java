@@ -50,6 +50,10 @@ public class CharacteristicsActivity extends AppCompatActivity implements Adapte
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         MyApplication.bluetoothGattCharacteristic = adapter.getItem(position);
         //MyApplication.bluetoothGattCharacteristic.getProperties();
-        startActivity(new Intent(this, GattDetailActivity.class));
+        if (MyApplication.bluetoothGattService.getUuid().toString().equals(GattAttributes.USR_SERVICE)) {
+            startActivity(new Intent(this, BleModuleActivity.class));
+        } else {
+            startActivity(new Intent(this, GattDetailActivity.class));
+        }
     }
 }
