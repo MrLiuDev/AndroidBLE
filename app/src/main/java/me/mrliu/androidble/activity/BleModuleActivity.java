@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import me.mrliu.androidble.BleService;
@@ -92,9 +93,38 @@ public class BleModuleActivity extends AppCompatActivity implements View.OnClick
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                adapter.addItem(Utils.ByteArrayToHex(characteristic.getValue()));
-                listView.setSelection(adapter.getCount()-1);
+                String str = splitJointPacket(characteristic.getValue());
+                if (!TextUtils.isEmpty(str)) {
+                    adapter.addItem(str);
+                    listView.setSelection(adapter.getCount()-1);
+                }
             }
         });
+    }
+
+    private List<Byte> byteList = new ArrayList<>();
+    /** 合并分包的数据 */
+    private String splitJointPacket(byte[] bytes) {
+        if (bytes.length < 0 || bytes.length > 34) {
+            // 数据异常
+            byteList.clear();
+            return "数据异常";
+        }
+
+        for (byte b : bytes) {
+            byteList.add(b);
+        }
+        if (byteList.size() == 34) {
+            Byte[] b = new Byte[byteList.size()];
+            String hexString = Utils.ByteArrayToHex(byteList.toArray(b));
+            byteList.clear();
+            return hexString;
+        } else if (byteList.size() > 34){
+            // 数据异常
+            byteList.clear();
+            return "数据异常";
+        } else {
+            return "";
+        }
     }
 }

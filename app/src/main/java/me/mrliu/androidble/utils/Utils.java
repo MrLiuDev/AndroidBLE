@@ -99,6 +99,19 @@ public class Utils {
         return sb.toString();
     }
 
+    public static String ByteArrayToHex(Byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            String bs = String.format("%02X ", b);
+            /*if (bs.trim().equals("0A")){
+                sb.append("0D 0A");
+            }else
+                sb.append(bs);*/
+            sb.append(bs);
+        }
+        return sb.toString();
+    }
+
     public static String bytesToHexString(byte[] src){
         StringBuilder stringBuilder = new StringBuilder("");
         if (src == null || src.length <= 0) {
