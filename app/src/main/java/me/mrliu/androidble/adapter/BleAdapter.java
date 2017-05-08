@@ -1,4 +1,4 @@
-package me.mrliu.androidble;
+package me.mrliu.androidble.adapter;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -10,6 +10,8 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import me.mrliu.androidble.R;
 
 /**
  * Created by LiuKang on 2017/5/4.

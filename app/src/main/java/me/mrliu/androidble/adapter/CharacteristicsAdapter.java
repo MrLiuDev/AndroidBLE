@@ -1,4 +1,4 @@
-package me.mrliu.androidble;
+package me.mrliu.androidble.adapter;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
@@ -9,6 +9,10 @@ import android.widget.BaseAdapter;
 import android.widget.TextView;
 
 import java.util.List;
+
+import me.mrliu.androidble.utils.GattAttributes;
+import me.mrliu.androidble.R;
+import me.mrliu.androidble.utils.Utils;
 
 /**
  * Created by LiuKang on 2017/5/5.

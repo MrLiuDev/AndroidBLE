@@ -29,6 +29,8 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.mrliu.androidble.utils.Type;
+
 /**
  * Created by LiuKang on 2017/5/4.
  */

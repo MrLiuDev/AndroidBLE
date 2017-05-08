@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="me.mrliu.androidble.CharacteristicsActivity">
+    tools:context="me.mrliu.androidble.activity.CharacteristicsActivity">
     <LinearLayout
         android:padding="5dp"
         android:orientation="vertical"

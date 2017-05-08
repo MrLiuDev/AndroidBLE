@@ -1,7 +1,9 @@
-package me.mrliu.androidble;
+package me.mrliu.androidble.utils;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
+
+import me.mrliu.androidble.R;
 
 public class Utils {
     public static String getProperties(Context context, BluetoothGattCharacteristic item){

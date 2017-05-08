@@ -1,4 +1,4 @@
-package me.mrliu.androidble;
+package me.mrliu.androidble.activity;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattService;
@@ -11,6 +11,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.List;
+
+import me.mrliu.androidble.MyApplication;
+import me.mrliu.androidble.R;
+import me.mrliu.androidble.adapter.ServicesAdapter;
 
 public class ServicesActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
     private TextView tvName, tvAddress, tvServices;

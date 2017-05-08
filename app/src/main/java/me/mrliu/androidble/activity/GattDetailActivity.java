@@ -1,4 +1,4 @@
-package me.mrliu.androidble;
+package me.mrliu.androidble.activity;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.v7.app.AppCompatActivity;
@@ -7,6 +7,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+
+import me.mrliu.androidble.MyApplication;
+import me.mrliu.androidble.R;
+import me.mrliu.androidble.utils.Utils;
 
 public class GattDetailActivity extends AppCompatActivity {
     private static final String TAG = GattDetailActivity.class.getSimpleName();

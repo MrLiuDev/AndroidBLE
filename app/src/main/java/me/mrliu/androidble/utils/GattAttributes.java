@@ -30,7 +30,7 @@
  * 
  */
 
-package me.mrliu.androidble;
+package me.mrliu.androidble.utils;
 
 import java.util.HashMap;
 

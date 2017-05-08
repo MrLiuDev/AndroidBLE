@@ -1,4 +1,4 @@
-package me.mrliu.androidble;
+package me.mrliu.androidble.activity;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -23,6 +23,12 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.List;
+
+import me.mrliu.androidble.BleService;
+import me.mrliu.androidble.MyApplication;
+import me.mrliu.androidble.R;
+import me.mrliu.androidble.utils.Type;
+import me.mrliu.androidble.adapter.BleAdapter;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, BleService.OnBleScanCallbackListener, AdapterView.OnItemClickListener, BleService.OnConnectionStateChangeListener, BleService.OnServicesDiscoveredListener {
     private Button btnOpenOrClose;

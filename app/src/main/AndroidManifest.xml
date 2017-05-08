@@ -15,7 +15,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -25,9 +25,9 @@
 
         <service android:name=".BleService" />
 
-        <activity android:name=".ServicesActivity" />
-        <activity android:name=".CharacteristicsActivity" />
-        <activity android:name=".GattDetailActivity"></activity>
+        <activity android:name=".activity.ServicesActivity" />
+        <activity android:name=".activity.CharacteristicsActivity" />
+        <activity android:name=".activity.GattDetailActivity"></activity>
     </application>
 
 </manifest>
