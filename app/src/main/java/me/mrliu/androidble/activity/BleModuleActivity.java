@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -45,6 +47,22 @@ public class BleModuleActivity extends AppCompatActivity implements View.OnClick
 
         adapter = new CharacteristicChangedAdapter(this);
         listView.setAdapter(adapter);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        menu.add(Menu.NONE, Menu.FIRST, 0, "Clear").setIcon(R.mipmap.ic_launcher_round);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case Menu.FIRST:
+                adapter.clearItems();
+                break;
+        }
+        return true;
     }
 
     private void initCharacteristics() {
@@ -94,9 +112,11 @@ public class BleModuleActivity extends AppCompatActivity implements View.OnClick
             @Override
             public void run() {
                 String str = splitJointPacket(characteristic.getValue());
+                //String str = Utils.ByteArrayToHex(characteristic.getValue());
                 if (!TextUtils.isEmpty(str)) {
                     adapter.addItem(str);
                     listView.setSelection(adapter.getCount()-1);
+                    Log.e(TAG, "--------------------------");
                 }
             }
         });
@@ -105,24 +125,28 @@ public class BleModuleActivity extends AppCompatActivity implements View.OnClick
     private List<Byte> byteList = new ArrayList<>();
     /** 合并分包的数据 */
     private String splitJointPacket(byte[] bytes) {
-        if (bytes.length < 0 || bytes.length > 34) {
+        if (bytes.length < 0 || bytes.length > 35) {
             // 数据异常
             byteList.clear();
             return "数据异常";
         }
 
+        //对接收数据进行判断，如果byteList开头的数据不是包头，先清理 byteList。
+        if (byteList.size()>0 && byteList.get(0) != 104) {
+            byteList.clear();
+        }
         for (byte b : bytes) {
             byteList.add(b);
         }
-        if (byteList.size() == 34) {
+        if (byteList.size() == 35) {
             Byte[] b = new Byte[byteList.size()];
             String hexString = Utils.ByteArrayToHex(byteList.toArray(b));
             byteList.clear();
             return hexString;
-        } else if (byteList.size() > 34){
+        } else if (byteList.size() > 35){
             // 数据异常
             byteList.clear();
-            return "数据异常";
+            return "数据异常>35";
         } else {
             return "";
         }
